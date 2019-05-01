@@ -6,6 +6,13 @@ import datetime
 import imutils
 import time
 
+
+def doThings(frame):
+    
+    return
+
+    
+
 vs = VideoStream(src=0).start()
 time.sleep(2.0)
 firstFrame = None
@@ -16,12 +23,20 @@ while True:
     frame = vs.read()
     frame = frame
     text = "no movement"
+    # print(frame.shape)
+
+    frameL = frame[:, :640, :]
+    frameR = frame[:, 640:1280, :]
+    # print(frameL.shape, frameR.shape)
+    # cv2.line(frame, pt1, pt2, color[, thickness[, lineType[, shift]]])
+    cv2.line(frame,(640,0),(640,720),(255,0,0),10)
 
 	# if the frame could not be grabbed, then we have reached the end
 	# of the video
     if frame is None:
         break
 
+    doThings(frame)
 	# resize the frame, convert it to grayscale, and blur it
     frame = imutils.resize(frame, width=500)
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -61,8 +76,8 @@ while True:
 		cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
     cv2.putText(frame, datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p"), (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
     cv2.imshow("Feed", frame)
-    cv2.imshow("Thresh", thresh)
-    cv2.imshow("Frame Delta", frameDelta)
+    # cv2.imshow("Thresh", thresh)
+    # cv2.imshow("Frame Delta", frameDelta)
     key = cv2.waitKey(1) & 0xFF
 
 	# if the `q` key is pressed, break from the lop
@@ -72,3 +87,4 @@ while True:
 # When everything done, release the capture
 vs.release()
 cv2.destroyAllWindows()
+
