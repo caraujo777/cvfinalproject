@@ -1,7 +1,7 @@
 # cvfinalproject
 comp vision final project
 
-pip install pyaudio
+pip3 install pyaudio
 
 python3 hi.py single_queen.wav
 
