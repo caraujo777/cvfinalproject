@@ -24,6 +24,7 @@ n = 1000
 
 data = wf.readframes(CHUNK)
 i = 0
+# isPalm = True
 # n and i will later be Y values of the two hand positions. Need to set range for both
 while data != '':
     n = n - 50
@@ -48,6 +49,8 @@ while data != '':
         output = wave.struct.pack("%dh"%(len(dataout)), *list(dataout)) 
 
     ################################ Code to change volume
+        if(isPalm):
+            i = 0
         newdata = audioop.mul(output, 2, i)
         i = i + 0.1
     #################################
