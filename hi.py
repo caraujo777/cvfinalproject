@@ -48,7 +48,7 @@ while data != '':
         output = wave.struct.pack("%dh"%(len(dataout)), *list(dataout)) 
 
     ################################ Code to change volume
-        newdata = audioop.mul(data, 2, i)
+        newdata = audioop.mul(output, 2, i)
         i = i + 0.1
     #################################
 
