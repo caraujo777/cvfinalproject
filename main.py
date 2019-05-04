@@ -6,9 +6,18 @@ import datetime
 import imutils
 import time
 
+
+def doThings(frame):
+    # cv2.imshow("Feed", frame)
+
+    return
+
+
+
 vs = VideoStream(src=0).start()
 time.sleep(2.0)
-firstFrame = None
+firstFrameL = None
+firstFrameR = None
 
 while True:
 	# grab the current frame and initialize the occupied/unoccupied
@@ -16,22 +25,31 @@ while True:
     frame = vs.read()
     frame = frame
     text = "no movement"
+    # print(frame.shape)
+
+    frameL = frame[:, :640, :]
+    frameR = frame[:, 640:1280, :]
+    # print(frameL.shape, frameR.shape)
+    cv2.line(frame,(640,0),(640,720),(255,0,0),10)
 
 	# if the frame could not be grabbed, then we have reached the end
 	# of the video
     if frame is None:
         break
 
-	# resize the frame, convert it to grayscale, and blur it
     frame = imutils.resize(frame, width=500)
+	# resize the frame, convert it to grayscale, and blur it
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (21, 21), 0)
     # blur to try and remove noise
 
 	# if the first frame is none, initialise the background
-    if firstFrame is None:
-        firstFrame = gray
+    if firstFrameL is None:
+        firstFrameL = gray[:, :250, :]
+        firstFrameR = gray[:, 250:500, :]
         continue
+    
+    doThings(frame)
 
     # compute the absolute difference between the current frame and
 	# first frame (ie background)
@@ -57,12 +75,15 @@ while True:
         (x, y, w, h) = cv2.boundingRect(c)
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
         text = "yep"
+
     cv2.putText(frame, "Room Status: {}".format(text), (10, 20),
 		cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
     cv2.putText(frame, datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p"), (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
+    
     cv2.imshow("Feed", frame)
-    cv2.imshow("Thresh", thresh)
-    cv2.imshow("Frame Delta", frameDelta)
+
+    # cv2.imshow("Thresh", thresh)
+    # cv2.imshow("Frame Delta", frameDelta)
     key = cv2.waitKey(1) & 0xFF
 
 	# if the `q` key is pressed, break from the lop
@@ -72,3 +93,4 @@ while True:
 # When everything done, release the capture
 vs.release()
 cv2.destroyAllWindows()
+
