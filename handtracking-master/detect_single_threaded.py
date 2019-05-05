@@ -18,7 +18,7 @@ import multiprocessing
 
 detection_graph, sess = detector_utils.load_inference_graph()
 
-def main(volume, pitch):
+def main(volume, pitch, pause):
 
     score_thresh = 0.2
     fps = 1
@@ -77,8 +77,11 @@ def main(volume, pitch):
             if right[0] > half_width:
                 handRight = image_np[right[1]:right[3], right[0]:right[2], :]
                 cv2.imshow('Right', cv2.cvtColor(handRight, cv2.COLOR_RGB2BGR))
-                volume.value = volume.value + 0.1
-                pitch.value = pitch.value + 10
+                # volume.value = volume.value + 0.1
+                # pitch.value = pitch.value + 10
+                pause.value = True
+            else:
+                pause.value = False
 
         # Calculate Frames per second (FPS)
         num_frames += 1
@@ -106,7 +109,7 @@ def main(volume, pitch):
 
 
 
-def audio(volume, pitch):
+def audio(volume, pitch, pause):
     CHUNK = 2**15
 
     if len(sys.argv) < 2:
@@ -144,7 +147,10 @@ def audio(volume, pitch):
             output = wave.struct.pack("%dh"%(len(dataout)), *list(dataout)) 
 
         ################################ Code to change volume
-            newdata = audioop.mul(output, 2, volume.value)
+            if(pause.value is False):
+                newdata = audioop.mul(output, 2, volume.value)
+            else:
+                newdata = audioop.mul(output, 2, 0)
         #################################
 
             stream.write(newdata)
@@ -162,11 +168,13 @@ if __name__ == '__main__':
   
     volume = multiprocessing.Value('f') 
     pitch = multiprocessing.Value('f') 
+    pause = multiprocessing.Value('b') 
 
-    volume.value = 0
+    pause = False
+    volume.value = 1
     pitch.value = 0
 
-    p1 = multiprocessing.Process(target=audio, args=(volume, pitch))
+    p1 = multiprocessing.Process(target=audio, args=(volume, pitch, pause))
     p1.start()
-    main(volume, pitch)
+    main(volume, pitch, pause)
 
