@@ -11,71 +11,19 @@ detection_graph, sess = detector_utils.load_inference_graph()
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '-sth',
-        '--scorethreshold',
-        dest='score_thresh',
-        type=float,
-        default=0.2,
-        help='Score threshold for displaying bounding boxes')
-    parser.add_argument(
-        '-fps',
-        '--fps',
-        dest='fps',
-        type=int,
-        default=1,
-        help='Show FPS on detection/display visualization')
-    parser.add_argument(
-        '-src',
-        '--source',
-        dest='video_source',
-        default=0,
-        help='Device index of the camera.')
-    parser.add_argument(
-        '-wd',
-        '--width',
-        dest='width',
-        type=int,
-        default=320,
-        help='Width of the frames in the video stream.')
-    parser.add_argument(
-        '-ht',
-        '--height',
-        dest='height',
-        type=int,
-        default=180,
-        help='Height of the frames in the video stream.')
-    parser.add_argument(
-        '-ds',
-        '--display',
-        dest='display',
-        type=int,
-        default=1,
-        help='Display the detected images using OpenCV. This reduces FPS')
-    parser.add_argument(
-        '-num-w',
-        '--num-workers',
-        dest='num_workers',
-        type=int,
-        default=4,
-        help='Number of workers.')
-    parser.add_argument(
-        '-q-size',
-        '--queue-size',
-        dest='queue_size',
-        type=int,
-        default=5,
-        help='Size of the queue.')
-    args = parser.parse_args()
+    score_thresh = 0.2
+    fps = 1
+    num_workers = 4
+    queue_size = 5
+    display = 1
 
-    cap = cv2.VideoCapture(args.video_source)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, args.width)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, args.height)
+    cap = cv2.VideoCapture(0)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 180)
 
     start_time = datetime.datetime.now()
     num_frames = 0
-    im_width, im_height = (cap.get(3), cap.get(4))
+    im_width, im_height = (int(cap.get(3)), int(cap.get(4)))
     # max number of hands we want to detect/track
     num_hands_detect = 2
 
@@ -91,32 +39,49 @@ if __name__ == '__main__':
         except:
             print("Error converting to RGB")
 
+        half_width = 160
+        image_l = image_np[:, :half_width, :]
+        image_r = image_np[:, half_width:im_width, :]
+
         # Actual detection. Variable boxes contains the bounding box cordinates for hands detected,
         # while scores contains the confidence for each of these boxes.
         # Hint: If len(boxes) > 1 , you may assume you have found atleast one hand (within your score threshold)
 
-        boxes, scores = detector_utils.detect_objects(image_np,
+        boxesL, scoresL = detector_utils.detect_objects(image_l,
                                                       detection_graph, sess)
-
-        centers = detector_utils.find_center_of_hands(num_hands_detect, args.score_thresh,
-                                         scores, boxes, im_width, im_height, image_np)
-
-        # draw bounding boxes on frame
-        detector_utils.draw_box_on_image(num_hands_detect, args.score_thresh,
-                                         scores, boxes, im_width, im_height,
-                                         image_np)
+        centersL, rectsL = detector_utils.find_center_of_hands(num_hands_detect, score_thresh,
+                                         scoresL, boxesL, half_width, im_height, image_l)
+        if len(rectsL) > 0:
+            top = int(rectsL[0][0])
+            left = int(rectsL[0][1])
+            bottom = int(rectsL[1][0])
+            right = int(rectsL[1][1])
+            hand1 = image_l[left:right, top:bottom, :]
+            cv2.imshow('Hand 1', cv2.cvtColor(hand1, cv2.COLOR_RGB2BGR))
+        
+        boxesR, scoresR = detector_utils.detect_objects(image_r,
+                                                      detection_graph, sess)
+        centersR, rectsR = detector_utils.find_center_of_hands(num_hands_detect, score_thresh,
+                                         scoresR, boxesR, half_width, im_height, image_r)
+        if len(rectsR) > 0:
+            top = int(rectsR[0][0])
+            left = int(rectsR[0][1])
+            bottom = int(rectsR[1][0])
+            right = int(rectsR[1][1])
+            hand2 = image_r[left:right, top:bottom, :]
+            cv2.imshow('Hand 2', cv2.cvtColor(hand2, cv2.COLOR_RGB2BGR))
 
         # Calculate Frames per second (FPS)
         num_frames += 1
         elapsed_time = (datetime.datetime.now() - start_time).total_seconds()
         fps = num_frames / elapsed_time
 
-        cv2.line(image_np, (160,0),(160,240),(255,0,0),2)
-        # print(image_np.shape)
+        # add a line to split the screen
+        cv2.line(image_np, (half_width,0),(half_width,im_height),(255,0,0),2)
 
-        if (args.display > 0):
+        if (display > 0):
             # Display FPS on frame
-            if (args.fps > 0):
+            if (fps > 0):
                 detector_utils.draw_fps_on_image("FPS : " + str(int(fps)),
                                                  image_np)
 
