@@ -39,8 +39,10 @@ def main(volume, pitch, pause):
     cv2.namedWindow('Single-Threaded Detection', cv2.WINDOW_NORMAL)
 
     while True:
+        
         # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
         ret, image_np = cap.read()
+        # image_np = imutils.resize(image_np, width=320)
         image_np = cv2.flip(image_np, 1)
 
         try:
@@ -48,7 +50,9 @@ def main(volume, pitch, pause):
         except:
             print("Error converting to RGB")
 
-        half_width = 160
+        half_width = int(im_width/2)
+        # print(image_np.shape)
+        # print(im_height, im_width)
         image_l = image_np[:, :half_width, :]
         image_r = image_np[:, half_width:im_width, :]
 
@@ -80,7 +84,7 @@ def main(volume, pitch, pause):
                 cv2.imshow('Right', cv2.cvtColor(handRight, cv2.COLOR_RGB2BGR))
                 # volume.value = volume.value + 0.1
                 # pitch.value = pitch.value + 10
-                pause.value = True
+                # pause.value = True
 
         # Calculate Frames per second (FPS)
         num_frames += 1
@@ -155,8 +159,8 @@ def audio(volume, pitch, pause):
             stream.write(newdata)
             data = wf.readframes(CHUNK)
 
-            print("Volume: {}".format(volume.value)) 
-            print("Pitch: {}".format(pitch.value)) 
+            # print("Volume: {}".format(volume.value)) 
+            # print("Pitch: {}".format(pitch.value)) 
     
     stream.stop_stream()
     stream.close()
