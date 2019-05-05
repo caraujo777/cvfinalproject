@@ -35,8 +35,9 @@ def main(volume, pitch, pause):
     im_width, im_height = (int(cap.get(3)), int(cap.get(4)))
     # max number of hands we want to detect/track
     num_hands_detect = 2
+    window_name = '**MaKE yOuR OwN MUsiC**'
 
-    cv2.namedWindow('Single-Threaded Detection', cv2.WINDOW_NORMAL)
+    cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 
     while True:
         
@@ -69,9 +70,9 @@ def main(volume, pitch, pause):
                                          scores, boxes, im_width, im_height, image_np)
 
         if len(rects) > 2:
-            # print(rects)
-            hand1 = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1]), int(centers[0][1])]
-            hand2 = [int(rects[2][0]), int(rects[2][1]), int(rects[3][0]), int(rects[3][1]), int(centers[1][1])]
+            # left, top, right, bottom, center x, center y
+            hand1 = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1]), int(centers[0][0]), int(centers[0][1])]
+            hand2 = [int(rects[2][0]), int(rects[2][1]), int(rects[3][0]), int(rects[3][1]), int(centers[1][0]), int(centers[1][1])]
             if rects[0][0] > rects[2][0]:
                 right = hand1
                 left = hand2
@@ -79,26 +80,27 @@ def main(volume, pitch, pause):
                 right = hand2
                 left = hand1
             if left[4] < half_width:
-                volume.value = ((240-left[4])/30)
+                volume.value = ((240-left[5])/30)
                 handLeft = image_np[left[1]:left[3], left[0]:left[2], :]
-                cv2.imshow('Left', cv2.cvtColor(handLeft, cv2.COLOR_RGB2BGR))
+                # cv2.imshow('Left', cv2.cvtColor(handLeft, cv2.COLOR_RGB2BGR))
             if right[4] > half_width:
-                pitch.value = (240-right[4])*5-200
+                pitch.value = (240-right[5])*5-200
                 handRight = image_np[right[1]:right[3], right[0]:right[2], :]
-                cv2.imshow('Right', cv2.cvtColor(handRight, cv2.COLOR_RGB2BGR))
-                # pitch.value = handRight[4]
-                # paused = True
-        # if len(rects)>0:
-        #     hand = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1]), int(centers[0][1])]
-        #     print(centers[0])
-            # volume.value = ((240-hand[4])/30)
-            # pitch.value = (240-hand[4])*5-200
-
+                # cv2.imshow('Right', cv2.cvtColor(handRight, cv2.COLOR_RGB2BGR))
+        elif len(rects) > 0:
+            hand = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1]), int(centers[0][0]), int(centers[0][1])]
+            print(hand[4], half_width)
+            if hand[4] < half_width:
+                volume.value = ((240-hand[5])/30)
+            elif hand[4] > half_width:
+                pitch.value = (240-hand[5])*3-200
+            hand = image_np[hand[1]:hand[3], hand[0]:hand[2], :]
+            # cv2.imshow('only hand', cv2.cvtColor(hand, cv2.COLOR_RGB2BGR))
 
         # Calculate Frames per second (FPS)
-        num_frames += 1
-        elapsed_time = (datetime.datetime.now() - start_time).total_seconds()
-        fps = num_frames / elapsed_time
+        # num_frames += 1
+        # elapsed_time = (datetime.datetime.now() - start_time).total_seconds()
+        # fps = num_frames / elapsed_time
 
         pause.value = paused
 
@@ -107,11 +109,13 @@ def main(volume, pitch, pause):
 
         if (display > 0):
             # Display FPS on frame
-            if (fps > 0):
-                detector_utils.draw_fps_on_image("FPS : " + str(int(fps)),
-                                                 image_np)
+            # if (fps > 0):
+            #     detector_utils.draw_fps_on_image("FPS : " + str(int(fps)),
+            #                                      image_np)
+            cv2.putText(image_np, "VOLUME", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (77, 255, 9), 1)
+            cv2.putText(image_np, "PITCH", (10+half_width, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (77, 255, 9), 1)
 
-            cv2.imshow('Single-Threaded Detection',
+            cv2.imshow(window_name,
                        cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR))
 
             if cv2.waitKey(5) & 0xFF == ord('q'):
@@ -143,7 +147,7 @@ def audio(volume, pitch, pause):
     while data != '':
         data = np.frombuffer(data, np.int16)
         n = int(pitch.value)
-        print(n)
+        print("pitch: "+str(n))
         ################################## Code to change pitch
         data = np.array(wave.struct.unpack("%dh"%(len(data)), data))
         if len(data) is not 0:
@@ -166,7 +170,7 @@ def audio(volume, pitch, pause):
             # if(pause.value == False):
             #     newdata = audioop.mul(output, 2, volume.value)
             # else:
-            print(volume.value)
+            print("vol: "+str(volume.value))
             newdata = audioop.mul(output, 2, volume.value)
         #################################
 
