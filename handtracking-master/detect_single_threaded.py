@@ -47,29 +47,27 @@ if __name__ == '__main__':
         # while scores contains the confidence for each of these boxes.
         # Hint: If len(boxes) > 1 , you may assume you have found atleast one hand (within your score threshold)
 
-        boxesL, scoresL = detector_utils.detect_objects(image_l,
+
+        boxes, scores = detector_utils.detect_objects(image_np,
                                                       detection_graph, sess)
-        centersL, rectsL = detector_utils.find_center_of_hands(num_hands_detect, score_thresh,
-                                         scoresL, boxesL, half_width, im_height, image_l)
-        if len(rectsL) > 0:
-            top = int(rectsL[0][0])
-            left = int(rectsL[0][1])
-            bottom = int(rectsL[1][0])
-            right = int(rectsL[1][1])
-            hand1 = image_l[left:right, top:bottom, :]
-            cv2.imshow('Hand 1', cv2.cvtColor(hand1, cv2.COLOR_RGB2BGR))
-        
-        boxesR, scoresR = detector_utils.detect_objects(image_r,
-                                                      detection_graph, sess)
-        centersR, rectsR = detector_utils.find_center_of_hands(num_hands_detect, score_thresh,
-                                         scoresR, boxesR, half_width, im_height, image_r)
-        if len(rectsR) > 0:
-            top = int(rectsR[0][0])
-            left = int(rectsR[0][1])
-            bottom = int(rectsR[1][0])
-            right = int(rectsR[1][1])
-            hand2 = image_r[left:right, top:bottom, :]
-            cv2.imshow('Hand 2', cv2.cvtColor(hand2, cv2.COLOR_RGB2BGR))
+        centers, rects = detector_utils.find_center_of_hands(num_hands_detect, score_thresh,
+                                         scores, boxes, im_width, im_height, image_np)
+        if len(rects) > 2:
+            print(rects)
+            hand1 = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1])]
+            hand2 = [int(rects[2][0]), int(rects[2][1]), int(rects[3][0]), int(rects[3][1])]
+            if rects[0][0] > rects[2][0]:
+                right = hand1
+                left = hand2
+            else:
+                right = hand2
+                left = hand1
+            if left[2] < half_width:
+                handLeft = image_np[left[1]:left[3], left[0]:left[2], :]
+                cv2.imshow('Left', cv2.cvtColor(handLeft, cv2.COLOR_RGB2BGR))
+            if right[0] > half_width:
+                handRight = image_np[right[1]:right[3], right[0]:right[2], :]
+                cv2.imshow('Right', cv2.cvtColor(handRight, cv2.COLOR_RGB2BGR))
 
         # Calculate Frames per second (FPS)
         num_frames += 1
