@@ -61,6 +61,7 @@ def main(volume, pitch, pause):
                                                       detection_graph, sess)
         centers, rects = detector_utils.find_center_of_hands(num_hands_detect, score_thresh,
                                          scores, boxes, im_width, im_height, image_np)
+
         if len(rects) > 2:
             print(rects)
             hand1 = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1])]
@@ -80,8 +81,6 @@ def main(volume, pitch, pause):
                 # volume.value = volume.value + 0.1
                 # pitch.value = pitch.value + 10
                 pause.value = True
-            else:
-                pause.value = False
 
         # Calculate Frames per second (FPS)
         num_frames += 1
@@ -147,7 +146,7 @@ def audio(volume, pitch, pause):
             output = wave.struct.pack("%dh"%(len(dataout)), *list(dataout)) 
 
         ################################ Code to change volume
-            if(pause.value is False):
+            if(pause.value == False):
                 newdata = audioop.mul(output, 2, volume.value)
             else:
                 newdata = audioop.mul(output, 2, 0)
@@ -170,7 +169,7 @@ if __name__ == '__main__':
     pitch = multiprocessing.Value('f') 
     pause = multiprocessing.Value('b') 
 
-    pause = False
+    pause.value = False
     volume.value = 1
     pitch.value = 0
 
