@@ -3,13 +3,25 @@ import cv2
 import tensorflow as tf
 import datetime
 import argparse
+from threading import Thread
+import time
 
 from imutils.video import VideoStream
 import imutils
 
+import pyaudio
+import sys
+import numpy as np
+import wave
+import audioop
+
+import multiprocessing
+
+currentVolume = 0
+
 detection_graph, sess = detector_utils.load_inference_graph()
 
-if __name__ == '__main__':
+def main(volume, pitch):
 
     score_thresh = 0.2
     fps = 1
@@ -29,6 +41,8 @@ if __name__ == '__main__':
 
     cv2.namedWindow('Single-Threaded Detection', cv2.WINDOW_NORMAL)
 
+    # global currentVolume
+
     while True:
         # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
         ret, image_np = cap.read()
@@ -42,6 +56,11 @@ if __name__ == '__main__':
         half_width = 160
         image_l = image_np[:, :half_width, :]
         image_r = image_np[:, half_width:im_width, :]
+
+
+        volume.value = volume.value + 0.01
+        pitch.value = pitch.value - 1
+
 
         # Actual detection. Variable boxes contains the bounding box cordinates for hands detected,
         # while scores contains the confidence for each of these boxes.
@@ -92,3 +111,70 @@ if __name__ == '__main__':
         else:
             print("frames processed: ", num_frames, "elapsed time: ",
                   elapsed_time, "fps: ", str(int(fps)))
+
+
+
+def audio(volume, pitch):
+    CHUNK = 2**15
+
+    if len(sys.argv) < 2:
+        print("Missing input wav file")
+        sys.exit(-1)
+
+    wf = wave.open(sys.argv[1], 'rb')
+    p = pyaudio.PyAudio()
+
+    stream = p.open(format=p.get_format_from_width(wf.getsampwidth()),
+                channels=wf.getnchannels(),
+                rate=wf.getframerate(),
+                output=True)
+
+    n = 0
+    data = wf.readframes(CHUNK)
+    while data != '':
+        data = np.frombuffer(data, np.int16)
+        ################################## Code to change pitch
+        data = np.array(wave.struct.unpack("%dh"%(len(data)), data))
+        if len(data) is not 0:
+            data = np.fft.rfft(data)
+            data2 = [0]*len(data)
+            if n >= 0:
+                data2[n:len(data)] = data[0:(len(data)-n)]
+                data2[0:n] = data[(len(data)-n):len(data)]
+            else:
+                data2[0:(len(data)+n)] = data[-n:len(data)]
+                data2[(len(data)+n):len(data)] = data[0:-n]
+    
+            data = np.array(data2)
+            data = np.fft.irfft(data)
+    
+            dataout = np.array(data, dtype='int16')
+            output = wave.struct.pack("%dh"%(len(dataout)), *list(dataout)) 
+
+        ################################ Code to change volume
+            newdata = audioop.mul(output, 2, volume.value)
+        #################################
+
+            stream.write(newdata)
+            data = wf.readframes(CHUNK)
+
+            print("Volume: {}".format(volume.value)) 
+            print("Pitch: {}".format(pitch.value)) 
+    
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
+
+
+if __name__ == '__main__':
+  
+    volume = multiprocessing.Value('f') 
+    pitch = multiprocessing.Value('f') 
+
+    volume.value = 0
+    pitch.value = 0
+
+    p1 = multiprocessing.Process(target=audio, args=(volume, pitch))
+    p1.start()
+    main(volume, pitch)
+
