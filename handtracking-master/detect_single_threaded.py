@@ -40,6 +40,8 @@ def main(volume, pitch, pause):
 
     while True:
         
+        paused = False
+        
         # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
         ret, image_np = cap.read()
         # image_np = imutils.resize(image_np, width=320)
@@ -66,30 +68,37 @@ def main(volume, pitch, pause):
         centers, rects = detector_utils.find_center_of_hands(num_hands_detect, score_thresh,
                                          scores, boxes, im_width, im_height, image_np)
 
-        if len(rects) > 2:
-            print(rects)
-            hand1 = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1])]
-            hand2 = [int(rects[2][0]), int(rects[2][1]), int(rects[3][0]), int(rects[3][1])]
-            if rects[0][0] > rects[2][0]:
-                right = hand1
-                left = hand2
-            else:
-                right = hand2
-                left = hand1
-            if left[2] < half_width:
-                handLeft = image_np[left[1]:left[3], left[0]:left[2], :]
-                cv2.imshow('Left', cv2.cvtColor(handLeft, cv2.COLOR_RGB2BGR))
-            if right[0] > half_width:
-                handRight = image_np[right[1]:right[3], right[0]:right[2], :]
-                cv2.imshow('Right', cv2.cvtColor(handRight, cv2.COLOR_RGB2BGR))
-                # volume.value = volume.value + 0.1
-                # pitch.value = pitch.value + 10
-                # pause.value = True
+        # if len(rects) > 2:
+        #     # print(rects)
+        #     hand1 = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1]), int(centers[0][1])]
+        #     hand2 = [int(rects[2][0]), int(rects[2][1]), int(rects[3][0]), int(rects[3][1]), int(centers[1][1])]
+        #     if rects[0][0] > rects[2][0]:
+        #         right = hand1
+        #         left = hand2
+        #     else:
+        #         right = hand2
+        #         left = hand1
+        #     if left[2] < half_width:
+        #         # volume.value = left[4]/(int(im_height/2))
+        #         handLeft = image_np[left[1]:left[3], left[0]:left[2], :]
+        #         cv2.imshow('Left', cv2.cvtColor(handLeft, cv2.COLOR_RGB2BGR))
+        #     if right[0] > half_width:
+        #         handRight = image_np[right[1]:right[3], right[0]:right[2], :]
+        #         cv2.imshow('Right', cv2.cvtColor(handRight, cv2.COLOR_RGB2BGR))
+        #         # pitch.value = handRight[4]
+        #         paused = True
+        if len(rects)>0:
+            hand = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1]), int(centers[0][1])]
+            # volume.value = 3 - ((hand[4]-50)/200)
+            pitch.value = 1200-((hand[4]-50)*2-200)
+
 
         # Calculate Frames per second (FPS)
         num_frames += 1
         elapsed_time = (datetime.datetime.now() - start_time).total_seconds()
         fps = num_frames / elapsed_time
+
+        pause.value = paused
 
         # add a line to split the screen
         cv2.line(image_np, (half_width,0),(half_width,im_height),(255,0,0),2)
@@ -127,10 +136,11 @@ def audio(volume, pitch, pause):
                 rate=wf.getframerate(),
                 output=True)
 
-    n = 0
     data = wf.readframes(CHUNK)
     while data != '':
         data = np.frombuffer(data, np.int16)
+        n = int(pitch.value)
+        print(n)
         ################################## Code to change pitch
         data = np.array(wave.struct.unpack("%dh"%(len(data)), data))
         if len(data) is not 0:
@@ -150,10 +160,11 @@ def audio(volume, pitch, pause):
             output = wave.struct.pack("%dh"%(len(dataout)), *list(dataout)) 
 
         ################################ Code to change volume
-            if(pause.value == False):
-                newdata = audioop.mul(output, 2, volume.value)
-            else:
-                newdata = audioop.mul(output, 2, 0)
+            # if(pause.value == False):
+            #     newdata = audioop.mul(output, 2, volume.value)
+            # else:
+            # print(volume.value)
+            newdata = audioop.mul(output, 2, volume.value)
         #################################
 
             stream.write(newdata)
@@ -175,7 +186,7 @@ if __name__ == '__main__':
 
     pause.value = False
     volume.value = 1
-    pitch.value = 0
+    pitch.value = 5
 
     p1 = multiprocessing.Process(target=audio, args=(volume, pitch, pause))
     p1.start()
