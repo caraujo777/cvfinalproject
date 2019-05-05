@@ -4,7 +4,6 @@ import tensorflow as tf
 import datetime
 import argparse
 from threading import Thread
-import time
 
 from imutils.video import VideoStream
 import imutils
@@ -16,8 +15,6 @@ import wave
 import audioop
 
 import multiprocessing
-
-currentVolume = 0
 
 detection_graph, sess = detector_utils.load_inference_graph()
 
@@ -41,8 +38,6 @@ def main(volume, pitch):
 
     cv2.namedWindow('Single-Threaded Detection', cv2.WINDOW_NORMAL)
 
-    # global currentVolume
-
     while True:
         # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
         ret, image_np = cap.read()
@@ -58,14 +53,9 @@ def main(volume, pitch):
         image_r = image_np[:, half_width:im_width, :]
 
 
-        volume.value = volume.value + 0.01
-        pitch.value = pitch.value - 1
-
-
         # Actual detection. Variable boxes contains the bounding box cordinates for hands detected,
         # while scores contains the confidence for each of these boxes.
         # Hint: If len(boxes) > 1 , you may assume you have found atleast one hand (within your score threshold)
-
 
         boxes, scores = detector_utils.detect_objects(image_np,
                                                       detection_graph, sess)
@@ -87,6 +77,8 @@ def main(volume, pitch):
             if right[0] > half_width:
                 handRight = image_np[right[1]:right[3], right[0]:right[2], :]
                 cv2.imshow('Right', cv2.cvtColor(handRight, cv2.COLOR_RGB2BGR))
+                volume.value = volume.value + 0.1
+                pitch.value = pitch.value + 10
 
         # Calculate Frames per second (FPS)
         num_frames += 1
