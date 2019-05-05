@@ -68,29 +68,31 @@ def main(volume, pitch, pause):
         centers, rects = detector_utils.find_center_of_hands(num_hands_detect, score_thresh,
                                          scores, boxes, im_width, im_height, image_np)
 
-        # if len(rects) > 2:
-        #     # print(rects)
-        #     hand1 = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1]), int(centers[0][1])]
-        #     hand2 = [int(rects[2][0]), int(rects[2][1]), int(rects[3][0]), int(rects[3][1]), int(centers[1][1])]
-        #     if rects[0][0] > rects[2][0]:
-        #         right = hand1
-        #         left = hand2
-        #     else:
-        #         right = hand2
-        #         left = hand1
-        #     if left[2] < half_width:
-        #         # volume.value = left[4]/(int(im_height/2))
-        #         handLeft = image_np[left[1]:left[3], left[0]:left[2], :]
-        #         cv2.imshow('Left', cv2.cvtColor(handLeft, cv2.COLOR_RGB2BGR))
-        #     if right[0] > half_width:
-        #         handRight = image_np[right[1]:right[3], right[0]:right[2], :]
-        #         cv2.imshow('Right', cv2.cvtColor(handRight, cv2.COLOR_RGB2BGR))
-        #         # pitch.value = handRight[4]
-        #         paused = True
-        if len(rects)>0:
-            hand = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1]), int(centers[0][1])]
-            # volume.value = 3 - ((hand[4]-50)/200)
-            pitch.value = 1200-((hand[4]-50)*2-200)
+        if len(rects) > 2:
+            # print(rects)
+            hand1 = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1]), int(centers[0][1])]
+            hand2 = [int(rects[2][0]), int(rects[2][1]), int(rects[3][0]), int(rects[3][1]), int(centers[1][1])]
+            if rects[0][0] > rects[2][0]:
+                right = hand1
+                left = hand2
+            else:
+                right = hand2
+                left = hand1
+            if left[4] < half_width:
+                volume.value = ((240-left[4])/30)
+                handLeft = image_np[left[1]:left[3], left[0]:left[2], :]
+                cv2.imshow('Left', cv2.cvtColor(handLeft, cv2.COLOR_RGB2BGR))
+            if right[4] > half_width:
+                pitch.value = (240-right[4])*5-200
+                handRight = image_np[right[1]:right[3], right[0]:right[2], :]
+                cv2.imshow('Right', cv2.cvtColor(handRight, cv2.COLOR_RGB2BGR))
+                # pitch.value = handRight[4]
+                # paused = True
+        # if len(rects)>0:
+        #     hand = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1]), int(centers[0][1])]
+        #     print(centers[0])
+            # volume.value = ((240-hand[4])/30)
+            # pitch.value = (240-hand[4])*5-200
 
 
         # Calculate Frames per second (FPS)
@@ -122,8 +124,9 @@ def main(volume, pitch, pause):
 
 
 def audio(volume, pitch, pause):
-    CHUNK = 2**15
 
+    CHUNK = 2**14
+    
     if len(sys.argv) < 2:
         print("Missing input wav file")
         sys.exit(-1)
@@ -163,7 +166,7 @@ def audio(volume, pitch, pause):
             # if(pause.value == False):
             #     newdata = audioop.mul(output, 2, volume.value)
             # else:
-            # print(volume.value)
+            print(volume.value)
             newdata = audioop.mul(output, 2, volume.value)
         #################################
 
