@@ -51,6 +51,7 @@ def load_inference_graph():
 # draw the detected bounding boxes on the images
 # You can modify this to also draw a label.
 def draw_box_on_image(num_hands_detect, score_thresh, scores, boxes, im_width, im_height, image_np):
+    rects = np.zeros((0, 2))
     for i in range(num_hands_detect):
         if (scores[i] > score_thresh):
             # print(boxes)
@@ -59,20 +60,27 @@ def draw_box_on_image(num_hands_detect, score_thresh, scores, boxes, im_width, i
             p1 = (int(left), int(top))
             p2 = (int(right), int(bottom))
             cv2.rectangle(image_np, p1, p2, (77, 255, 9), 3, 1)
-
+            rects = np.vstack((rects, (p1, p2)))
+    return rects
 
 def find_center_of_hands(num_hands_detect, score_thresh, scores, boxes, im_width, im_height, image_np):
     centers = np.zeros((0, 2))
+    rects = np.zeros((0, 2))
     for i in range(num_hands_detect):
         if (scores[i] > score_thresh):
-            (x, y) = ((boxes[i][1]+boxes[i][3])/2 * im_width,
-                                          (boxes[i][0]+boxes[i][2])/2 * im_height)
+            (left, right, top, bottom) = (boxes[i][1] * im_width, boxes[i][3] * im_width,
+                                          boxes[i][0] * im_height, boxes[i][2] * im_height)
+            p1 = (int(left), int(top))
+            p2 = (int(right), int(bottom))
+            cv2.rectangle(image_np, p1, p2, (77, 255, 9), 3, 1)
+            rects = np.vstack((rects, (p1, p2)))
+
+            (x, y) = (int((left+right)/2), int((top+bottom)/2))
             p = (int(x), int(y))
             cv2.circle(image_np, p, 5, (0, 255, 0), thickness=1, lineType=8, shift=0)
             centers = np.vstack((centers, p))
-    # if len(centers) != 0:
-    #     print(centers)
-    return centers
+            
+    return centers, rects
 
 # Show fps value on image.
 def draw_fps_on_image(fps, image_np):
