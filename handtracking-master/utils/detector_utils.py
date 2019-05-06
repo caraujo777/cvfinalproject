@@ -72,7 +72,7 @@ def find_center_of_hands(num_hands_detect, score_thresh, scores, boxes, im_width
                                           boxes[i][0] * im_height, boxes[i][2] * im_height)
             p1 = (int(left), int(top))
             p2 = (int(right), int(bottom))
-            cv2.rectangle(image_np, p1, p2, (77, 255, 9), 3, 1)
+            cv2.rectangle(image_np, p1, p2, (77, 255, 9), 2, 1)
             rects = np.vstack((rects, (p1, p2)))
 
             (x, y) = (int((left+right)/2), int((top+bottom)/2))

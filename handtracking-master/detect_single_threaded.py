@@ -1,4 +1,5 @@
 from utils import detector_utils as detector_utils
+from gesture_detector import label_image as label_image
 import cv2
 import tensorflow as tf
 import datetime
@@ -9,7 +10,7 @@ from imutils.video import VideoStream
 import imutils
 
 import pyaudio
-import sys
+import sys, time
 import numpy as np
 import wave
 import audioop
@@ -17,6 +18,7 @@ import audioop
 import multiprocessing
 
 detection_graph, sess = detector_utils.load_inference_graph()
+gesture_sess, input_operation, output_operation = label_image.get_ready() 
 
 def main(volume, pitch, pause):
 
@@ -83,19 +85,27 @@ def main(volume, pitch, pause):
                 volume.value = ((im_height-left[5])*8/im_height) 
                 handLeft = image_np[left[1]:left[3], left[0]:left[2], :]
                 # cv2.imshow('Left', cv2.cvtColor(handLeft, cv2.COLOR_RGB2BGR))
+                gesture, gesture_val = label_image.detect(gesture_sess, handLeft, input_operation, output_operation)
+                if int(gesture) == 0 and gesture_val > 0.85:
+                    cv2.putText(image_np, "PAUSED", (100, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 0, 0), 2)
+                    paused = True
             if right[4] > half_width:
                 pitch.value = (im_height-right[5])*1200/im_height-200
                 handRight = image_np[right[1]:right[3], right[0]:right[2], :]
                 # cv2.imshow('Right', cv2.cvtColor(handRight, cv2.COLOR_RGB2BGR))
         elif len(rects) > 0:
             hand = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1]), int(centers[0][0]), int(centers[0][1])]
-            print(hand[4], half_width)
+            handOnly = image_np[hand[1]:hand[3], hand[0]:hand[2], :]
             if hand[4] < half_width:
                 volume.value = ((im_height-hand[5])*8/im_height) 
+                gesture, gesture_val = label_image.detect(gesture_sess, handOnly, input_operation, output_operation)
+                if int(gesture) == 0 and gesture_val > 0.85:
+                    cv2.putText(image_np, "PAUSED", (100, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 0, 0), 2)
+                    paused = True
             elif hand[4] > half_width:
                 pitch.value = (im_height-hand[5])*1200/im_height-200
-            hand = image_np[hand[1]:hand[3], hand[0]:hand[2], :]
-            # cv2.imshow('only hand', cv2.cvtColor(hand, cv2.COLOR_RGB2BGR))
+            # cv2.imshow('only hand', cv2.cvtColor(handOnly, cv2.COLOR_RGB2BGR))
+
 
         # Calculate Frames per second (FPS)
         # num_frames += 1
@@ -105,15 +115,15 @@ def main(volume, pitch, pause):
         pause.value = paused
 
         # add a line to split the screen
-        cv2.line(image_np, (half_width,0),(half_width,im_height),(255,0,0),2)
+        cv2.line(image_np, (half_width,0),(half_width,im_height),(255, 255, 255), 2)
 
         if (display > 0):
             # Display FPS on frame
             # if (fps > 0):
             #     detector_utils.draw_fps_on_image("FPS : " + str(int(fps)),
             #                                      image_np)
-            cv2.putText(image_np, "VOLUME", (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (77, 255, 9), 1)
-            cv2.putText(image_np, "PITCH", (10+half_width, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (77, 255, 9), 1)
+            cv2.putText(image_np, "VOLUME: "+str(round(volume.value, 2)), (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+            cv2.putText(image_np, "PITCH: "+str(pitch.value), (10+half_width, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
             cv2.imshow(window_name,
                        cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR))
@@ -144,10 +154,11 @@ def audio(volume, pitch, pause):
                 output=True)
 
     data = wf.readframes(CHUNK)
+    time.sleep(10)
     while data != '':
         data = np.frombuffer(data, np.int16)
         n = int(pitch.value)
-        print("pitch: "+str(n))
+        # print("pitch: "+str(n))
         ################################## Code to change pitch
         data = np.array(wave.struct.unpack("%dh"%(len(data)), data))
         if len(data) is not 0:
@@ -167,11 +178,11 @@ def audio(volume, pitch, pause):
             output = wave.struct.pack("%dh"%(len(dataout)), *list(dataout)) 
 
         ################################ Code to change volume
-            # if(pause.value == False):
-            #     newdata = audioop.mul(output, 2, volume.value)
             # else:
-            print("vol: "+str(volume.value))
-            newdata = audioop.mul(output, 2, volume.value)
+            # print("vol: "+str(volume.value))
+            if(pause.value == True):
+                volume.value = 0
+            newdata = audioop.mul(output, 2, volume.value) 
         #################################
 
             stream.write(newdata)
