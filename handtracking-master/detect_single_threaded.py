@@ -80,11 +80,11 @@ def main(volume, pitch, pause):
                 right = hand2
                 left = hand1
             if left[4] < half_width:
-                volume.value = ((240-left[5])/30)
+                volume.value = ((im_height-left[5])*8/im_height) 
                 handLeft = image_np[left[1]:left[3], left[0]:left[2], :]
                 # cv2.imshow('Left', cv2.cvtColor(handLeft, cv2.COLOR_RGB2BGR))
             if right[4] > half_width:
-                pitch.value = (240-right[5])*5-200
+                pitch.value = (im_height-right[5])*1200/im_height-200
                 handRight = image_np[right[1]:right[3], right[0]:right[2], :]
                 # cv2.imshow('Right', cv2.cvtColor(handRight, cv2.COLOR_RGB2BGR))
         elif len(rects) > 0:
@@ -112,8 +112,8 @@ def main(volume, pitch, pause):
             # if (fps > 0):
             #     detector_utils.draw_fps_on_image("FPS : " + str(int(fps)),
             #                                      image_np)
-            cv2.putText(image_np, "VOLUME", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (77, 255, 9), 1)
-            cv2.putText(image_np, "PITCH", (10+half_width, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (77, 255, 9), 1)
+            cv2.putText(image_np, "VOLUME", (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (77, 255, 9), 1)
+            cv2.putText(image_np, "PITCH", (10+half_width, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (77, 255, 9), 1)
 
             cv2.imshow(window_name,
                        cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR))
