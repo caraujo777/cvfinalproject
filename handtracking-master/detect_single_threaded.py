@@ -91,9 +91,9 @@ def main(volume, pitch, pause):
             hand = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1]), int(centers[0][0]), int(centers[0][1])]
             print(hand[4], half_width)
             if hand[4] < half_width:
-                volume.value = ((240-hand[5])/30)
+                volume.value = ((im_height-hand[5])*8/im_height) 
             elif hand[4] > half_width:
-                pitch.value = (240-hand[5])*3-200
+                pitch.value = (im_height-hand[5])*1200/im_height-200
             hand = image_np[hand[1]:hand[3], hand[0]:hand[2], :]
             # cv2.imshow('only hand', cv2.cvtColor(hand, cv2.COLOR_RGB2BGR))
 
