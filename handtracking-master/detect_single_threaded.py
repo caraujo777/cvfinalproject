@@ -17,24 +17,24 @@ import audioop
 
 import multiprocessing
 
-detection_graph, sess = detector_utils.load_inference_graph()
-gesture_sess, input_operation, output_operation = label_image.get_ready() 
+detection_graph, sess = detector_utils.load_inference_graph() # Load hand detection
+gesture_sess, input_operation, output_operation = label_image.get_ready() # Load gesture detection
 
+# Main Loop
 def main(volume, pitch, pause):
 
-    score_thresh = 0.2
+    score_thresh = 0.2 # Hand detection center threshold
     fps = 1
-    num_workers = 4
-    queue_size = 5
     display = 1
 
     cap = cv2.VideoCapture(0)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 180)
 
-    start_time = datetime.datetime.now()
+    # start_time = datetime.datetime.now()
     num_frames = 0
     im_width, im_height = (int(cap.get(3)), int(cap.get(4)))
+
     # max number of hands we want to detect/track
     num_hands_detect = 2
     window_name = '**MaKE yOuR OwN MUsiC**'
@@ -42,9 +42,7 @@ def main(volume, pitch, pause):
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
 
     while True:
-        
-        paused = False
-        
+        isPaused = False
         # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
         ret, image_np = cap.read()
         # image_np = imutils.resize(image_np, width=320)
@@ -58,50 +56,51 @@ def main(volume, pitch, pause):
         half_width = int(im_width/2)
         # print(image_np.shape)
         # print(im_height, im_width)
+
         image_l = image_np[:, :half_width, :]
         image_r = image_np[:, half_width:im_width, :]
 
-
-        # Actual detection. Variable boxes contains the bounding box cordinates for hands detected,
-        # while scores contains the confidence for each of these boxes.
-        # Hint: If len(boxes) > 1 , you may assume you have found atleast one hand (within your score threshold)
-
-        boxes, scores = detector_utils.detect_objects(image_np,
-                                                      detection_graph, sess)
+        # Hand detection
+        boxes, scores = detector_utils.detect_objects(image_np, detection_graph, sess)
         centers, rects = detector_utils.find_center_of_hands(num_hands_detect, score_thresh,
                                          scores, boxes, im_width, im_height, image_np)
 
+        # Threshold for gesture detection
+        threshold = 0.85
+
+        # if 2 hands are found
         if len(rects) > 2:
             # left, top, right, bottom, center x, center y
             hand1 = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1]), int(centers[0][0]), int(centers[0][1])]
             hand2 = [int(rects[2][0]), int(rects[2][1]), int(rects[3][0]), int(rects[3][1]), int(centers[1][0]), int(centers[1][1])]
+
             if rects[0][0] > rects[2][0]:
                 right = hand1
                 left = hand2
             else:
                 right = hand2
                 left = hand1
+
+            # check for left hand and right hand, amend audio accordingly
             if left[4] < half_width:
-                volume.value = ((im_height-left[5])*8/im_height) 
+                volume.value = ((im_height-left[5])*8/im_height)
                 handLeft = image_np[left[1]:left[3], left[0]:left[2], :]
                 # cv2.imshow('Left', cv2.cvtColor(handLeft, cv2.COLOR_RGB2BGR))
                 gesture, gesture_val = label_image.detect(gesture_sess, handLeft, input_operation, output_operation)
-                if int(gesture) == 0 and gesture_val > 0.85:
-                    cv2.putText(image_np, "PAUSED", (100, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 0, 0), 2)
-                    paused = True
+                isPaused = check_pause(gesture, gesture_val, threshold, image_np)
             if right[4] > half_width:
                 pitch.value = (im_height-right[5])*1200/im_height-200
                 handRight = image_np[right[1]:right[3], right[0]:right[2], :]
                 # cv2.imshow('Right', cv2.cvtColor(handRight, cv2.COLOR_RGB2BGR))
+
+        # if only 1 hand is found
         elif len(rects) > 0:
             hand = [int(rects[0][0]), int(rects[0][1]), int(rects[1][0]), int(rects[1][1]), int(centers[0][0]), int(centers[0][1])]
             handOnly = image_np[hand[1]:hand[3], hand[0]:hand[2], :]
             if hand[4] < half_width:
-                volume.value = ((im_height-hand[5])*8/im_height) 
+                volume.value = ((im_height-hand[5])*8/im_height)
                 gesture, gesture_val = label_image.detect(gesture_sess, handOnly, input_operation, output_operation)
-                if int(gesture) == 0 and gesture_val > 0.85:
-                    cv2.putText(image_np, "PAUSED", (100, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 0, 0), 2)
-                    paused = True
+                isPaused = check_pause(gesture, gesture_val, threshold, image_np)
             elif hand[4] > half_width:
                 pitch.value = (im_height-hand[5])*1200/im_height-200
             # cv2.imshow('only hand', cv2.cvtColor(handOnly, cv2.COLOR_RGB2BGR))
@@ -112,7 +111,7 @@ def main(volume, pitch, pause):
         # elapsed_time = (datetime.datetime.now() - start_time).total_seconds()
         # fps = num_frames / elapsed_time
 
-        pause.value = paused
+        pause.value = isPaused
 
         # add a line to split the screen
         cv2.line(image_np, (half_width,0),(half_width,im_height),(255, 255, 255), 2)
@@ -120,8 +119,7 @@ def main(volume, pitch, pause):
         if (display > 0):
             # Display FPS on frame
             # if (fps > 0):
-            #     detector_utils.draw_fps_on_image("FPS : " + str(int(fps)),
-            #                                      image_np)
+            #     detector_utils.draw_fps_on_image("FPS : " + str(int(fps)), image_np)
             cv2.putText(image_np, "VOLUME: "+str(round(volume.value, 2)), (10, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
             cv2.putText(image_np, "PITCH: "+str(pitch.value), (10+half_width, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
@@ -135,12 +133,18 @@ def main(volume, pitch, pause):
             print("frames processed: ", num_frames, "elapsed time: ",
                   elapsed_time, "fps: ", str(int(fps)))
 
+# Helper method to check whether or not music should be paused or not; returns boolean.
+def check_pause(gesture, gesture_val, threshold, image_np):
+    if int(gesture) == 0 and gesture_val > threshold:
+        cv2.putText(image_np, "PAUSED", (100, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 0, 0), 2)
+        return True
+    return False
 
-
+# Method to change audio
 def audio(volume, pitch, pause):
 
     CHUNK = 2**14
-    
+
     if len(sys.argv) < 2:
         print("Missing input wav file")
         sys.exit(-1)
@@ -164,43 +168,44 @@ def audio(volume, pitch, pause):
         if len(data) is not 0:
             data = np.fft.rfft(data)
             data2 = [0]*len(data)
+            data_reduce = (len(data) - n)
+            data_extend = (len(data) + n)
             if n >= 0:
-                data2[n:len(data)] = data[0:(len(data)-n)]
-                data2[0:n] = data[(len(data)-n):len(data)]
+                data2[n:len(data)] = data[0:data_reduce]
+                data2[0:n] = data[data_reduce:len(data)]
             else:
-                data2[0:(len(data)+n)] = data[-n:len(data)]
-                data2[(len(data)+n):len(data)] = data[0:-n]
-    
+                data2[0:data_extend] = data[-n:len(data)]
+                data2[data_extend:len(data)] = data[0:-n]
+
             data = np.array(data2)
             data = np.fft.irfft(data)
-    
+
             dataout = np.array(data, dtype='int16')
-            output = wave.struct.pack("%dh"%(len(dataout)), *list(dataout)) 
+            output = wave.struct.pack("%dh"%(len(dataout)), *list(dataout))
 
         ################################ Code to change volume
             # else:
             # print("vol: "+str(volume.value))
             if(pause.value == True):
                 volume.value = 0
-            newdata = audioop.mul(output, 2, volume.value) 
+            newdata = audioop.mul(output, 2, volume.value)
         #################################
 
             stream.write(newdata)
             data = wf.readframes(CHUNK)
 
-            # print("Volume: {}".format(volume.value)) 
-            # print("Pitch: {}".format(pitch.value)) 
-    
+            # print("Volume: {}".format(volume.value))
+            # print("Pitch: {}".format(pitch.value))
+
     stream.stop_stream()
     stream.close()
     p.terminate()
 
-
 if __name__ == '__main__':
-  
-    volume = multiprocessing.Value('f') 
-    pitch = multiprocessing.Value('f') 
-    pause = multiprocessing.Value('b') 
+
+    volume = multiprocessing.Value('f')
+    pitch = multiprocessing.Value('f')
+    pause = multiprocessing.Value('b')
 
     pause.value = False
     volume.value = 1
@@ -209,4 +214,3 @@ if __name__ == '__main__':
     p1 = multiprocessing.Process(target=audio, args=(volume, pitch, pause))
     p1.start()
     main(volume, pitch, pause)
-
