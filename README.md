@@ -1,6 +1,6 @@
 # Making Music with Gesture Detection
 
-Setup:
+# Setup
 brew install portaudio
 pip3 install pyaudio
 
