@@ -9,7 +9,7 @@ To run:
 
 python3 makemusic.py a.wav
 
-It will take about 10 seconds to load inference graphs after a hand has been detected: please wait for about 5 seconds!
+It will take about 5 seconds to load inference graphs after a hand has been detected: please wait for a while!
 
 # Notes
 
