@@ -1,14 +1,17 @@
 # cvfinalproject
-comp vision final project
+Computer Vision Final Project
 
+Before running:
+
+brew install portaudio
 pip3 install pyaudio
+pip3 install requirements.txt
 
-python3 audio.py single_queen.wav
+To run the code:
 
-python3 audio.py a.wav
+python3 makemusic.py note.wav
+python3 makemusic.py single_queen.wav
 
-Input .wav must be single-stream (only one channel).
+The second argument .wav must be a single-channel wav file.
 
-To convert to wav: https://audio.online-convert.com/convert-to-wav - make sure to select mono audio channel.
-
-For handtracking.py - pip3 install requirements.txt for that specific version of opencv
+To convert any mp3 sound to the .wav format: https://audio.online-convert.com/convert-to-wav - make sure to select single audio channel.
