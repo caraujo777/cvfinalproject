@@ -4,7 +4,9 @@ Computer Vision Final Project
 Before running:
 
 brew install portaudio
+
 pip3 install pyaudio
+
 pip3 install requirements.txt
 
 To run the code:
