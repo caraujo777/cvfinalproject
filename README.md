@@ -21,4 +21,6 @@ To convert your own audio file to wav: https://audio.online-convert.com/convert-
 # Structure
 
 Our main file is makemusic.py, which contains the audio logic and video stream upon which we perform hand detection.
+Within utils, we have a WebcamVideoStream object detection set up.
+Within gesture detector, we have helper classes for detecting open vs closed palms.
 
