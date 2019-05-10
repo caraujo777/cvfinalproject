@@ -12,6 +12,7 @@ pip3 install requirements.txt
 To run the code:
 
 python3 makemusic.py note.wav
+
 python3 makemusic.py single_queen.wav
 
 The second argument .wav must be a single-channel wav file.
