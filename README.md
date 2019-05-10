@@ -2,6 +2,7 @@
 
 # Setup
 brew install portaudio
+
 pip3 install pyaudio
 
 python3 hi.py single_queen.wav
